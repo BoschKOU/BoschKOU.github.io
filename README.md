@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -18,7 +17,6 @@
         .btn:active { opacity: 0.8; }
         .btn-scan { background: #34c759; }
         .note { font-size: 0.8em; color: #888; margin-top: 4px; line-height: 1.4; }
-        canvas { max-width: 100%; height: auto; margin-top: 10px; border:1px solid #eee; border-radius:8px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.8em; margin-top: 10px; }
         th { background: #4f81bd; color: white; padding: 6px; text-align: center; }
         td { padding: 6px; text-align: center; border-bottom: 1px solid #eee; }
@@ -26,6 +24,19 @@
         .result-badge { text-align: center; font-size: 1em; margin: 10px 0; padding: 8px; border-radius: 8px; }
         .ok { background: #d4edda; color: #155724; }
         .warn { background: #fff3cd; color: #856404; }
+        /* 散点图容器及 tooltip */
+        .chart-container { position: relative; margin-top: 10px; }
+        #scatterTooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            display: none;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
@@ -71,7 +82,7 @@
         <div style="overflow-x:auto;"><table id="scanTable" style="display:none;"><thead><tr><th>T(万)</th><th>老股估值</th><th>A%</th><th>综合成本</th><th>投资人股比</th><th>公司入账</th><th>A套现</th><th>创始人投后</th></tr></thead><tbody></tbody></table></div>
     </div>
 
-    <!-- 散点图（纯 Canvas，无任何库） -->
+    <!-- 散点图（纯 Canvas，增强标签与悬停） -->
     <div class="card">
         <h3>📈 可行域散点图</h3>
         <div class="flex-row">
@@ -82,7 +93,10 @@
             <div class="input-group"><label>出让比例下限（%）</label><input type="number" id="chartAMin" value="8" step="0.5" onchange="drawChart()"></div>
             <div class="input-group"><label>出让比例上限（%）</label><input type="number" id="chartAMax" value="12" step="0.5" onchange="drawChart()"></div>
         </div>
-        <canvas id="scatterCanvas" width="600" height="350"></canvas>
+        <div class="chart-container">
+            <canvas id="scatterCanvas" width="600" height="350"></canvas>
+            <div id="scatterTooltip"></div>
+        </div>
         <div class="note">● 绿色 = 满足所有约束  ● 灰色 = 不满足  —— 红色虚线：综合成本 4.0 / 4.5</div>
     </div>
 
@@ -165,7 +179,7 @@ function scanAll() {
     document.getElementById('scanInfo').innerText = `✅ 找到 ${results.length} 个可行方案（按公司进账降序）`;
 }
 
-// ========== 纯 Canvas 散点图 ==========
+// ========== 纯 Canvas 散点图（带轴标签和悬停） ==========
 function drawChart() {
     const canvas = document.getElementById('scatterCanvas');
     const ctx = canvas.getContext('2d');
@@ -183,47 +197,109 @@ function drawChart() {
 
     const Vmin = 24000, Vmax = 46000;
     const yMin = 2.5, yMax = 6.5;
-    const pad = 40;
-    const plotW = W - pad*2, plotH = H - pad*2;
+    const padLeft = 50, padRight = 20, padTop = 20, padBottom = 40;
+    const plotW = W - padLeft - padRight;
+    const plotH = H - padTop - padBottom;
 
-    // 辅助线
-    ctx.strokeStyle = '#ddd'; ctx.lineWidth = 0.5;
+    // 绘制背景网格
+    ctx.strokeStyle = '#eee'; ctx.lineWidth = 0.5;
     for (let v=25000; v<=45000; v+=5000) {
-        const x = pad + (v-Vmin)/(Vmax-Vmin)*plotW;
-        ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, H-pad); ctx.stroke();
+        const x = padLeft + (v-Vmin)/(Vmax-Vmin)*plotW;
+        ctx.beginPath(); ctx.moveTo(x, padTop); ctx.lineTo(x, H-padBottom); ctx.stroke();
     }
     for (let y=3; y<=6; y+=0.5) {
-        const yPos = H - pad - ((y-yMin)/(yMax-yMin))*plotH;
-        ctx.beginPath(); ctx.moveTo(pad, yPos); ctx.lineTo(W-pad, yPos); ctx.stroke();
+        const yPos = H - padBottom - ((y-yMin)/(yMax-yMin))*plotH;
+        ctx.beginPath(); ctx.moveTo(padLeft, yPos); ctx.lineTo(W-padRight, yPos); ctx.stroke();
     }
 
-    // 绘制每个点
+    // 存储所有点的信息用于悬停检测
+    const points = [];
+
+    // 绘制散点
     for (let Vold=25000; Vold<=45000; Vold+=1000) {
         for (let a=aMin; a<=aMax; a+=0.005) {
             const res = calcOne(T, pre, Vold, a, shares, founderPre);
             const feasible = (res.blended>=4 && res.blended<=4.5 && res.founderPostPct>=founderMin);
-            const x = pad + (Vold-Vmin)/(Vmax-Vmin)*plotW;
-            const y = H - pad - ((res.blended-yMin)/(yMax-yMin))*plotH;
+            const x = padLeft + (Vold-Vmin)/(Vmax-Vmin)*plotW;
+            const y = H - padBottom - ((res.blended-yMin)/(yMax-yMin))*plotH;
             ctx.beginPath();
-            ctx.arc(x, y, feasible?4:3, 0, Math.PI*2);
+            const radius = feasible ? 4 : 3;
+            ctx.arc(x, y, radius, 0, Math.PI*2);
             ctx.fillStyle = feasible ? 'rgba(75,192,192,0.9)' : 'rgba(200,200,200,0.6)';
             ctx.fill();
+            // 存储点信息
+            points.push({ x, y, Vold, a, blended: res.blended, feasible });
         }
     }
 
     // 红色虚线 4.0 / 4.5
     ctx.strokeStyle = 'red'; ctx.lineWidth = 1.5; ctx.setLineDash([5,3]);
     [4.0,4.5].forEach(val=>{
-        const y = H - pad - ((val-yMin)/(yMax-yMin))*plotH;
-        ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W-pad, y); ctx.stroke();
+        const y = H - padBottom - ((val-yMin)/(yMax-yMin))*plotH;
+        ctx.beginPath(); ctx.moveTo(padLeft, y); ctx.lineTo(W-padRight, y); ctx.stroke();
     });
     ctx.setLineDash([]);
 
-    // 轴标签
-    ctx.fillStyle = '#333'; ctx.font = '12px sans-serif';
-    ctx.fillText('老股估值(万元)', W/2-40, H-5);
-    ctx.save(); ctx.translate(15, H/2); ctx.rotate(-Math.PI/2);
-    ctx.fillText('综合成本(元)', 0, 0); ctx.restore();
+    // 坐标轴
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padLeft, padTop); ctx.lineTo(padLeft, H-padBottom); ctx.lineTo(W-padRight, H-padBottom);
+    ctx.stroke();
+
+    // X轴刻度标签
+    ctx.fillStyle = '#333'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+    for (let v=25000; v<=45000; v+=5000) {
+        const x = padLeft + (v-Vmin)/(Vmax-Vmin)*plotW;
+        ctx.fillText((v/10000).toFixed(1)+'亿', x, H-padBottom+15);
+    }
+    ctx.fillText('老股估值 V_old（万元）', W/2, H-5);
+
+    // Y轴刻度标签
+    ctx.textAlign = 'right';
+    for (let y=3; y<=6; y+=0.5) {
+        const yPos = H - padBottom - ((y-yMin)/(yMax-yMin))*plotH;
+        ctx.fillText(y.toFixed(1), padLeft-8, yPos+3);
+    }
+    ctx.save();
+    ctx.translate(12, H/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.textAlign = 'center';
+    ctx.fillText('综合每股成本（元）', 0, 0);
+    ctx.restore();
+
+    // 悬停事件处理
+    const tooltip = document.getElementById('scatterTooltip');
+    canvas.onmousemove = function(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;   // canvas 物理像素比
+        const scaleY = canvas.height / rect.height;
+        const mouseX = (e.clientX - rect.left) * scaleX;
+        const mouseY = (e.clientY - rect.top) * scaleY;
+
+        // 寻找最近的点（距离阈值 8px）
+        let minDist = 8;
+        let closest = null;
+        for (let p of points) {
+            const dx = mouseX - p.x;
+            const dy = mouseY - p.y;
+            const dist = Math.sqrt(dx*dx+dy*dy);
+            if (dist < minDist) {
+                minDist = dist;
+                closest = p;
+            }
+        }
+        if (closest) {
+            tooltip.style.display = 'block';
+            tooltip.style.left = (closest.x / scaleX + 10) + 'px';
+            tooltip.style.top = (closest.y / scaleY - 20) + 'px';
+            tooltip.innerHTML = `V_old:${closest.Vold}万, a:${(closest.a*100).toFixed(1)}%<br>综合成本:${closest.blended.toFixed(2)}元`;
+        } else {
+            tooltip.style.display = 'none';
+        }
+    };
+    canvas.onmouseleave = function() {
+        tooltip.style.display = 'none';
+    };
 }
 window.onload = function(){ calculate(); drawChart(); };
 </script>
