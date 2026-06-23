@@ -44,7 +44,7 @@
         </div>
         <div class="flex-row">
             <div class="input-group"><label>现有总股本（万股）</label><input type="number" id="totalShares" value="10000" step="100"></div>
-            <div class="input-group"><label>创始人投前持股（%）</label><input type="number" id="founderPre" value="30.20" step="0.1"></div>
+            <div class="input-group"><label>创始人投前持股（%）</label><input type="number" id="founderPre" value="32.20" step="0.1"></div>
         </div>
         <div class="input-group"><label>创始人最低可接受投后持股（%）</label><input type="number" id="founderMin" value="27.26" step="0.1"></div>
         <button class="btn" onclick="calculate()">计算</button>
