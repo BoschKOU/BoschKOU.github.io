@@ -3,23 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>融资方案配比 · 完整工具</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <title>融资方案配比工具</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f5f7fa; color: #333; padding: 15px; max-width: 750px; margin: 0 auto; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f7fa; color: #333; padding: 15px; max-width: 750px; margin: 0 auto; }
         h2 { text-align: center; margin-bottom: 10px; font-size: 1.3em; color: #1a3b5d; }
         .card { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
         .input-group { margin-bottom: 10px; }
         .input-group label { display: block; font-size: 0.9em; font-weight: 600; margin-bottom: 4px; color: #555; }
-        .input-group input, .input-group select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em; }
+        .input-group input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em; }
         .flex-row { display: flex; gap: 10px; }
         .flex-row > .input-group { flex: 1; }
         .btn { display: block; width: 100%; background: #007aff; color: white; border: none; padding: 10px; border-radius: 8px; font-size: 1em; font-weight: bold; margin-top: 10px; cursor: pointer; }
         .btn:active { opacity: 0.8; }
         .btn-scan { background: #34c759; }
         .note { font-size: 0.8em; color: #888; margin-top: 4px; line-height: 1.4; }
-        canvas { max-width: 100%; height: auto; margin-top: 10px; }
+        canvas { max-width: 100%; height: auto; margin-top: 10px; border:1px solid #eee; border-radius:8px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.8em; margin-top: 10px; }
         th { background: #4f81bd; color: white; padding: 6px; text-align: center; }
         td { padding: 6px; text-align: center; border-bottom: 1px solid #eee; }
@@ -27,370 +26,206 @@
         .result-badge { text-align: center; font-size: 1em; margin: 10px 0; padding: 8px; border-radius: 8px; }
         .ok { background: #d4edda; color: #155724; }
         .warn { background: #fff3cd; color: #856404; }
-        hr { margin: 15px 0; border: 0.5px solid #ddd; }
     </style>
 </head>
 <body>
     <h2>📊 融资方案配比 · 交互工具</h2>
 
-    <!-- ========== 1. 单次计算卡片 ========== -->
+    <!-- 单点计算 -->
     <div class="card">
         <h3>🔢 单点计算</h3>
         <div class="flex-row">
-            <div class="input-group">
-                <label>总融资额 T（万元）</label>
-                <input type="number" id="T" value="5000" step="100">
-            </div>
-            <div class="input-group">
-                <label>新股投前估值（万元）</label>
-                <input type="number" id="preMoney" value="45000" step="1000">
-            </div>
+            <div class="input-group"><label>总融资额 T（万元）</label><input type="number" id="T" value="5000" step="100"></div>
+            <div class="input-group"><label>新股投前估值（万元）</label><input type="number" id="preMoney" value="45000" step="1000"></div>
         </div>
         <div class="flex-row">
-            <div class="input-group">
-                <label>老股转让估值 V_old（万元）</label>
-                <input type="number" id="Vold" value="40000" step="1000">
-            </div>
-            <div class="input-group">
-                <label>A出让比例（例8%填0.08）</label>
-                <input type="number" id="aShare" value="0.08" step="0.01">
-            </div>
+            <div class="input-group"><label>老股转让估值 V_old（万元）</label><input type="number" id="Vold" value="40000" step="1000"></div>
+            <div class="input-group"><label>A出让比例（例8%填0.08）</label><input type="number" id="aShare" value="0.08" step="0.01"></div>
         </div>
         <div class="flex-row">
-            <div class="input-group">
-                <label>现有总股本（万股）</label>
-                <input type="number" id="totalShares" value="10000" step="100">
-            </div>
-            <div class="input-group">
-                <label>创始人投前持股（%）</label>
-                <input type="number" id="founderPre" value="30.20" step="0.1">
-            </div>
+            <div class="input-group"><label>现有总股本（万股）</label><input type="number" id="totalShares" value="10000" step="100"></div>
+            <div class="input-group"><label>创始人投前持股（%）</label><input type="number" id="founderPre" value="30.20" step="0.1"></div>
         </div>
-        <div class="input-group">
-            <label>创始人最低可接受投后持股（%）</label>
-            <input type="number" id="founderMin" value="27.26" step="0.1">
-        </div>
+        <div class="input-group"><label>创始人最低可接受投后持股（%）</label><input type="number" id="founderMin" value="27.26" step="0.1"></div>
         <button class="btn" onclick="calculate()">计算</button>
         <div id="resultStatus" class="result-badge"></div>
         <table id="resultTable"><thead><tr><th>指标</th><th>数值</th></tr></thead><tbody></tbody></table>
         <div id="founderWarning" style="margin-top:10px; display:none;"></div>
     </div>
 
-    <!-- ========== 2. 一键扫描全部可行方案 ========== -->
+    <!-- 一键扫描 -->
     <div class="card">
         <h3>🔍 一键扫描可行方案</h3>
-        <div class="note" style="margin-bottom:10px;">
-            💡 <strong>通俗解释：</strong> 计算机自动尝试各种可能的总融资额、老股估值、出让比例组合，<br>
-            就像在一个网格上挨个检查，找出所有同时满足“综合价4-4.5”和“创始人持股底线”的方案。<br>
-            下面的“步长”就是网格的精细度：步长越小，检查越密，结果越完整，但计算时间稍长。
+        <div class="note" style="margin-bottom:8px;">自动遍历总融资额、老股估值、出让比例，找出满足“综合价4-4.5”且“创始人持股≥底线”的所有组合。</div>
+        <div class="flex-row">
+            <div class="input-group"><label>T 融资额列表（逗号分隔，万元）</label><input type="text" id="Tlist" value="4000,5000,10000"></div>
+            <div class="input-group"><label>老股估值步长（万元）</label><input type="number" id="Vstep" value="1000" step="500"></div>
         </div>
         <div class="flex-row">
-            <div class="input-group">
-                <label>T 融资额列表（逗号分隔，万元）</label>
-                <input type="text" id="Tlist" value="4000,5000,10000">
-            </div>
-            <div class="input-group">
-                <label>老股估值步长（万元，推荐500或1000）</label>
-                <input type="number" id="Vstep" value="1000" step="500">
-            </div>
+            <div class="input-group"><label>出让比例下限（%）</label><input type="number" id="aMin" value="8" step="0.5"></div>
+            <div class="input-group"><label>出让比例上限（%）</label><input type="number" id="aMax" value="12" step="0.5"></div>
+            <div class="input-group"><label>出让步长（%）</label><input type="number" id="aStep" value="0.5" step="0.1"></div>
         </div>
-        <div class="flex-row">
-            <div class="input-group">
-                <label>出让比例下限（%）</label>
-                <input type="number" id="aMin" value="8" step="0.5">
-            </div>
-            <div class="input-group">
-                <label>出让比例上限（%）</label>
-                <input type="number" id="aMax" value="12" step="0.5">
-            </div>
-            <div class="input-group">
-                <label>出让步长（%，推荐0.5）</label>
-                <input type="number" id="aStep" value="0.5" step="0.1">
-            </div>
-        </div>
-        <button class="btn btn-scan" onclick="scanAll()">开始扫描可行方案</button>
+        <button class="btn btn-scan" onclick="scanAll()">开始扫描</button>
         <div id="scanInfo" class="note" style="margin-top:8px;"></div>
-        <div style="overflow-x:auto;">
-            <table id="scanTable" style="display:none;">
-                <thead>
-                    <tr>
-                        <th>T(万)</th><th>老股估值(万)</th><th>A出让%</th>
-                        <th>综合成本</th><th>投资人股比</th>
-                        <th>公司入账(万)</th><th>A套现(万)</th>
-                        <th>创始人投后</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <div style="overflow-x:auto;"><table id="scanTable" style="display:none;"><thead><tr><th>T(万)</th><th>老股估值</th><th>A%</th><th>综合成本</th><th>投资人股比</th><th>公司入账</th><th>A套现</th><th>创始人投后</th></tr></thead><tbody></tbody></table></div>
     </div>
 
-    <!-- ========== 3. 散点图（独立控制，T 手动输入） ========== -->
+    <!-- 散点图（纯 Canvas，无任何库） -->
     <div class="card">
-        <h3>📈 可行域散点图（可视化）</h3>
-        <div class="note" style="margin-bottom:10px;">
-            输入你想观察的总融资额 T，图表会显示不同老股估值和出让比例下的综合成本。<br>
-            绿色点 = 同时满足综合价4.0~4.5 且 创始人投后≥底线。
+        <h3>📈 可行域散点图</h3>
+        <div class="flex-row">
+            <div class="input-group"><label>观察 T 值（万元）</label><input type="number" id="chartT" value="5000" step="100" onchange="drawChart()"></div>
+            <div class="input-group"><label>创始人最低投后（%）</label><input type="number" id="chartFounderMin" value="27.26" step="0.1" onchange="drawChart()"></div>
         </div>
         <div class="flex-row">
-            <div class="input-group">
-                <label>观察的 T 值（万元）</label>
-                <input type="number" id="chartT" value="5000" step="100" onchange="drawChart()">
-            </div>
-            <div class="input-group">
-                <label>创始人最低投后（%）</label>
-                <input type="number" id="chartFounderMin" value="27.26" step="0.1" onchange="drawChart()">
-            </div>
+            <div class="input-group"><label>出让比例下限（%）</label><input type="number" id="chartAMin" value="8" step="0.5" onchange="drawChart()"></div>
+            <div class="input-group"><label>出让比例上限（%）</label><input type="number" id="chartAMax" value="12" step="0.5" onchange="drawChart()"></div>
         </div>
-        <div class="flex-row">
-            <div class="input-group">
-                <label>出让比例下限（%）</label>
-                <input type="number" id="chartAMin" value="8" step="0.5" onchange="drawChart()">
-            </div>
-            <div class="input-group">
-                <label>出让比例上限（%）</label>
-                <input type="number" id="chartAMax" value="12" step="0.5" onchange="drawChart()">
-            </div>
-        </div>
-        <canvas id="feasibleChart" width="400" height="300"></canvas>
-        <div class="note">红色虚线：综合成本4.0和4.5。绿点：通过所有约束。</div>
+        <canvas id="scatterCanvas" width="600" height="350"></canvas>
+        <div class="note">● 绿色 = 满足所有约束  ● 灰色 = 不满足  —— 红色虚线：综合成本 4.0 / 4.5</div>
     </div>
 
-    <script>
-        // ========== 通用计算函数 ==========
-        function calcOne(T, pre, Vold, a, shares, founderPre) {
-            const oldAmount = a * Vold;
-            const newAmount = T - oldAmount;
-            const newPrice = pre / shares;
-            const oldShares = a * shares;
-            const newShares = newAmount / newPrice;
-            const invShares = oldShares + newShares;
-            const blended = T / invShares;
-            const postShares = shares + newShares;
-            const invPct = invShares / postShares;
-            const founderPreShares = shares * (founderPre / 100);
-            const founderPostPct = (founderPreShares / postShares) * 100;
-            return {
-                T, pre, Vold, a, shares, founderPre,
-                oldAmount, newAmount, oldShares, newShares,
-                invShares, blended, postShares, invPct, founderPostPct
-            };
-        }
+<script>
+// ========== 通用计算函数 ==========
+function calcOne(T, pre, Vold, a, shares, founderPre) {
+    const oldAmount = a * Vold;
+    const newAmount = T - oldAmount;
+    const newPrice = pre / shares;
+    const oldShares = a * shares;
+    const newShares = newAmount / newPrice;
+    const invShares = oldShares + newShares;
+    const blended = T / invShares;
+    const postShares = shares + newShares;
+    const invPct = invShares / postShares;
+    const founderPostPct = (shares * (founderPre/100)) / postShares * 100;
+    return { oldAmount, newAmount, oldShares, newShares, invShares, blended, postShares, invPct, founderPostPct };
+}
 
-        function judge(blended) {
-            if (blended >= 4.0 && blended <= 4.5) return "✅ 综合价可行";
-            if (blended < 4.0) return "⚠️ 综合价太低";
-            return "⚠️ 综合价太高";
-        }
+// ========== 单次计算 ==========
+function calculate() {
+    const T = +document.getElementById('T').value;
+    const pre = +document.getElementById('preMoney').value;
+    const Vold = +document.getElementById('Vold').value;
+    const a = +document.getElementById('aShare').value;
+    const shares = +document.getElementById('totalShares').value;
+    const founderPre = +document.getElementById('founderPre').value;
+    const founderMin = +document.getElementById('founderMin').value;
+    if (!T || !pre || !Vold || !a || !shares || !founderPre) return alert("请填完所有参数");
+    const res = calcOne(T, pre, Vold, a, shares, founderPre);
+    const status = (res.blended>=4 && res.blended<=4.5) ? "✅ 综合价可行" : (res.blended<4?"⚠️ 综合价太低":"⚠️ 综合价太高");
+    document.getElementById('resultStatus').innerText = status;
+    document.getElementById('resultStatus').className = 'result-badge ' + (status.includes('✅')?'ok':'warn');
+    let html = `<tr><td>老股每股价格</td><td>${(Vold/shares).toFixed(2)}元</td></tr>
+    <tr><td>新股每股价格</td><td>${(pre/shares).toFixed(2)}元</td></tr>
+    <tr><td>老股成交金额</td><td>${res.oldAmount.toFixed(0)}万</td></tr>
+    <tr><td>新股融资金额</td><td>${res.newAmount.toFixed(0)}万</td></tr>
+    <tr class="highlight"><td>综合每股成本</td><td>${res.blended.toFixed(2)}元</td></tr>
+    <tr><td>投资人总股数</td><td>${res.invShares.toFixed(2)}万股</td></tr>
+    <tr class="highlight"><td>投资人投后股比</td><td>${(res.invPct*100).toFixed(2)}%</td></tr>
+    <tr><td>公司入账</td><td>${res.newAmount.toFixed(0)}万</td></tr>
+    <tr><td>A套现</td><td>${res.oldAmount.toFixed(0)}万</td></tr>
+    <tr style="background:#f0f7ff;"><td>创始人投后持股</td><td><strong>${res.founderPostPct.toFixed(2)}%</strong></td></tr>`;
+    document.querySelector('#resultTable tbody').innerHTML = html;
+    const warnDiv = document.getElementById('founderWarning');
+    if (res.founderPostPct < founderMin) {
+        warnDiv.style.display='block'; warnDiv.style.background='#f8d7da'; warnDiv.style.color='#721c24'; warnDiv.style.padding='8px'; warnDiv.style.borderRadius='8px';
+        warnDiv.innerText = `⚠️ 创始人投后 ${res.founderPostPct.toFixed(2)}% 低于最低要求 ${founderMin}%`;
+    } else warnDiv.style.display='none';
+}
 
-        // ========== 单次计算 ==========
-        function calculate() {
-            const T = parseFloat(document.getElementById('T').value);
-            const pre = parseFloat(document.getElementById('preMoney').value);
-            const Vold = parseFloat(document.getElementById('Vold').value);
-            const a = parseFloat(document.getElementById('aShare').value);
-            const shares = parseFloat(document.getElementById('totalShares').value);
-            const founderPre = parseFloat(document.getElementById('founderPre').value);
-            const founderMin = parseFloat(document.getElementById('founderMin').value);
-
-            if (isNaN(T) || isNaN(pre) || isNaN(Vold) || isNaN(a) || isNaN(shares) || isNaN(founderPre) || shares <= 0) {
-                alert("请填写所有参数");
-                return;
+// ========== 一键扫描 ==========
+function scanAll() {
+    const Tlist = document.getElementById('Tlist').value.split(',').map(Number).filter(n=>!isNaN(n));
+    const Vstep = +document.getElementById('Vstep').value;
+    const aMin = +document.getElementById('aMin').value/100;
+    const aMax = +document.getElementById('aMax').value/100;
+    const aStep = +document.getElementById('aStep').value/100;
+    const pre = +document.getElementById('preMoney').value;
+    const shares = +document.getElementById('totalShares').value;
+    const founderPre = +document.getElementById('founderPre').value;
+    const founderMin = +document.getElementById('founderMin').value;
+    if (!Tlist.length) return alert("请输入T列表");
+    const results = [];
+    for (let T of Tlist) {
+        for (let Vold=25000; Vold<=45000; Vold+=Vstep) {
+            for (let a=aMin; a<=aMax; a+=aStep) {
+                const res = calcOne(T, pre, Vold, a, shares, founderPre);
+                if (res.blended<4 || res.blended>4.5) continue;
+                if (res.founderPostPct < founderMin) continue;
+                if (res.newAmount <= 0) continue;
+                results.push({T, Vold, a, ...res});
             }
+        }
+    }
+    results.sort((a,b)=>b.newAmount-a.newAmount);
+    const tbody = document.querySelector('#scanTable tbody');
+    tbody.innerHTML = results.length ? results.map(r=>`<tr><td>${r.T}</td><td>${r.Vold}</td><td>${(r.a*100).toFixed(1)}%</td><td>${r.blended.toFixed(2)}</td><td>${(r.invPct*100).toFixed(2)}%</td><td>${r.newAmount.toFixed(0)}</td><td>${r.oldAmount.toFixed(0)}</td><td>${r.founderPostPct.toFixed(2)}%</td></tr>`).join('') : '<tr><td colspan="8">无满足所有条件的方案</td></tr>';
+    document.getElementById('scanTable').style.display='table';
+    document.getElementById('scanInfo').innerText = `✅ 找到 ${results.length} 个可行方案（按公司进账降序）`;
+}
 
+// ========== 纯 Canvas 散点图 ==========
+function drawChart() {
+    const canvas = document.getElementById('scatterCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    const T = +document.getElementById('chartT').value;
+    const pre = +document.getElementById('preMoney').value;
+    const founderPre = +document.getElementById('founderPre').value;
+    const founderMin = +document.getElementById('chartFounderMin').value;
+    const aMin = +document.getElementById('chartAMin').value/100;
+    const aMax = +document.getElementById('chartAMax').value/100;
+    const shares = 10000;
+    if (!T || !pre || !founderPre) return;
+
+    const Vmin = 24000, Vmax = 46000;
+    const yMin = 2.5, yMax = 6.5;
+    const pad = 40;
+    const plotW = W - pad*2, plotH = H - pad*2;
+
+    // 辅助线
+    ctx.strokeStyle = '#ddd'; ctx.lineWidth = 0.5;
+    for (let v=25000; v<=45000; v+=5000) {
+        const x = pad + (v-Vmin)/(Vmax-Vmin)*plotW;
+        ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, H-pad); ctx.stroke();
+    }
+    for (let y=3; y<=6; y+=0.5) {
+        const yPos = H - pad - ((y-yMin)/(yMax-yMin))*plotH;
+        ctx.beginPath(); ctx.moveTo(pad, yPos); ctx.lineTo(W-pad, yPos); ctx.stroke();
+    }
+
+    // 绘制每个点
+    for (let Vold=25000; Vold<=45000; Vold+=1000) {
+        for (let a=aMin; a<=aMax; a+=0.005) {
             const res = calcOne(T, pre, Vold, a, shares, founderPre);
-            const status = judge(res.blended);
-            const statusDiv = document.getElementById('resultStatus');
-            statusDiv.innerText = status;
-            statusDiv.className = 'result-badge ' + (status.includes('可行') ? 'ok' : 'warn');
-
-            const tbody = document.querySelector('#resultTable tbody');
-            tbody.innerHTML = `
-                <tr><td>老股每股价格（元）</td><td>${(Vold/shares).toFixed(2)}</td></tr>
-                <tr><td>新股每股价格（元）</td><td>${(pre/shares).toFixed(2)}</td></tr>
-                <tr><td>老股成交金额（万元）</td><td>${res.oldAmount.toFixed(0)}</td></tr>
-                <tr><td>新股融资金额（万元）</td><td>${res.newAmount.toFixed(0)}</td></tr>
-                <tr class="highlight"><td>综合每股成本（元）</td><td>${res.blended.toFixed(2)}</td></tr>
-                <tr><td>投资人总获股数（万股）</td><td>${res.invShares.toFixed(2)}</td></tr>
-                <tr class="highlight"><td>投资人投后股比</td><td>${(res.invPct*100).toFixed(2)}%</td></tr>
-                <tr><td>公司入账资金（万元）</td><td>${res.newAmount.toFixed(0)}</td></tr>
-                <tr><td>老股东A套现金额（万元）</td><td>${res.oldAmount.toFixed(0)}</td></tr>
-                <tr style="background:#f0f7ff;"><td>创始人投后持股</td><td><strong>${res.founderPostPct.toFixed(2)}%</strong></td></tr>
-            `;
-
-            const warningDiv = document.getElementById('founderWarning');
-            if (res.founderPostPct < founderMin) {
-                warningDiv.style.display = 'block';
-                warningDiv.style.background = '#f8d7da';
-                warningDiv.style.color = '#721c24';
-                warningDiv.style.padding = '8px';
-                warningDiv.style.borderRadius = '8px';
-                warningDiv.innerText = `⚠️ 创始人投后 ${res.founderPostPct.toFixed(2)}% 低于最低要求 ${founderMin}%`;
-            } else {
-                warningDiv.style.display = 'none';
-            }
+            const feasible = (res.blended>=4 && res.blended<=4.5 && res.founderPostPct>=founderMin);
+            const x = pad + (Vold-Vmin)/(Vmax-Vmin)*plotW;
+            const y = H - pad - ((res.blended-yMin)/(yMax-yMin))*plotH;
+            ctx.beginPath();
+            ctx.arc(x, y, feasible?4:3, 0, Math.PI*2);
+            ctx.fillStyle = feasible ? 'rgba(75,192,192,0.9)' : 'rgba(200,200,200,0.6)';
+            ctx.fill();
         }
+    }
 
-        // ========== 一键扫描全部可行方案 ==========
-        function scanAll() {
-            const TlistStr = document.getElementById('Tlist').value;
-            const Tarr = TlistStr.split(',').map(Number).filter(n => !isNaN(n));
-            const Vstep = parseFloat(document.getElementById('Vstep').value);
-            const aMin = parseFloat(document.getElementById('aMin').value) / 100;
-            const aMax = parseFloat(document.getElementById('aMax').value) / 100;
-            const aStep = parseFloat(document.getElementById('aStep').value) / 100;
-            const pre = parseFloat(document.getElementById('preMoney').value);
-            const shares = parseFloat(document.getElementById('totalShares').value);
-            const founderPre = parseFloat(document.getElementById('founderPre').value);
-            const founderMin = parseFloat(document.getElementById('founderMin').value);
+    // 红色虚线 4.0 / 4.5
+    ctx.strokeStyle = 'red'; ctx.lineWidth = 1.5; ctx.setLineDash([5,3]);
+    [4.0,4.5].forEach(val=>{
+        const y = H - pad - ((val-yMin)/(yMax-yMin))*plotH;
+        ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W-pad, y); ctx.stroke();
+    });
+    ctx.setLineDash([]);
 
-            if (Tarr.length === 0 || isNaN(Vstep) || isNaN(aMin) || isNaN(aMax) || isNaN(aStep)) {
-                alert("请正确填写扫描参数");
-                return;
-            }
-
-            const results = [];
-            for (let T of Tarr) {
-                for (let Vold = 25000; Vold <= 45000; Vold += Vstep) {
-                    for (let a = aMin; a <= aMax; a += aStep) {
-                        const res = calcOne(T, pre, Vold, a, shares, founderPre);
-                        if (res.blended < 4.0 || res.blended > 4.5) continue;
-                        if (res.founderPostPct < founderMin) continue;
-                        if (res.newAmount <= 0) continue;
-                        results.push(res);
-                    }
-                }
-            }
-
-            results.sort((a,b) => b.newAmount - a.newAmount);
-
-            const tbody = document.querySelector('#scanTable tbody');
-            tbody.innerHTML = '';
-            if (results.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8">没有找到满足所有条件的方案，请放宽约束（如降低创始人最低持股、扩大出让比例范围等）。</td></tr>';
-            } else {
-                for (let r of results) {
-                    tbody.innerHTML += `<tr>
-                        <td>${r.T}</td>
-                        <td>${r.Vold}</td>
-                        <td>${(r.a*100).toFixed(1)}%</td>
-                        <td>${r.blended.toFixed(2)}</td>
-                        <td>${(r.invPct*100).toFixed(2)}%</td>
-                        <td>${r.newAmount.toFixed(0)}</td>
-                        <td>${r.oldAmount.toFixed(0)}</td>
-                        <td>${r.founderPostPct.toFixed(2)}%</td>
-                    </tr>`;
-                }
-            }
-            document.getElementById('scanTable').style.display = 'table';
-            document.getElementById('scanInfo').innerText = `✅ 找到 ${results.length} 个可行方案，按公司进账从多到少排列。`;
-        }
-
-        // ========== 散点图（独立控制，T 值手动输入） ==========
-        let chartInstance = null;
-        function drawChart() {
-            const T = parseFloat(document.getElementById('chartT').value);
-            const pre = parseFloat(document.getElementById('preMoney').value);
-            const founderPre = parseFloat(document.getElementById('founderPre').value);
-            const founderMin = parseFloat(document.getElementById('chartFounderMin').value);
-            const aMin = parseFloat(document.getElementById('chartAMin').value) / 100;
-            const aMax = parseFloat(document.getElementById('chartAMax').value) / 100;
-            const shares = 10000;
-
-            if (isNaN(T) || isNaN(pre) || isNaN(founderPre) || isNaN(founderMin) || isNaN(aMin) || isNaN(aMax)) {
-                alert("请填写散点图所有参数");
-                return;
-            }
-
-            const VoldList = [];
-            for (let v = 25000; v <= 45000; v += 1000) VoldList.push(v);
-            const aList = [];
-            for (let a = aMin; a <= aMax; a += 0.005) aList.push(a);
-
-            const datasets = [];
-            for (let a of aList) {
-                const feasiblePoints = [];
-                const unfeasiblePoints = [];
-                for (let Vold of VoldList) {
-                    const res = calcOne(T, pre, Vold, a, shares, founderPre);
-                    const feasible = (res.blended >= 4.0 && res.blended <= 4.5 && res.founderPostPct >= founderMin);
-                    if (feasible) {
-                        feasiblePoints.push({x: Vold, y: res.blended});
-                    } else {
-                        unfeasiblePoints.push({x: Vold, y: res.blended});
-                    }
-                }
-                if (feasiblePoints.length > 0) {
-                    datasets.push({
-                        label: `a=${(a*100).toFixed(1)}% 可行`,
-                        data: feasiblePoints,
-                        backgroundColor: 'rgba(75,192,192,0.9)',
-                        pointRadius: 5,
-                        showLine: false,
-                        type: 'scatter'
-                    });
-                }
-                if (unfeasiblePoints.length > 0) {
-                    datasets.push({
-                        label: `a=${(a*100).toFixed(1)}% 不可行`,
-                        data: unfeasiblePoints,
-                        backgroundColor: 'rgba(200,200,200,0.5)',
-                        pointRadius: 3,
-                        showLine: false,
-                        type: 'scatter'
-                    });
-                }
-            }
-
-            const ctx = document.getElementById('feasibleChart').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, {
-                type: 'scatter',
-                data: { datasets },
-                options: {
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: (ctx) => `老股估值:${ctx.raw.x}万, 综合成本:${ctx.raw.y.toFixed(2)}`
-                            }
-                        },
-                        legend: { display: false }
-                    },
-                    scales: {
-                        x: {
-                            title: { display: true, text: '老股估值 V_old（万元）' },
-                            min: 24000, max: 46000
-                        },
-                        y: {
-                            title: { display: true, text: '综合每股成本（元）' },
-                            min: 2.5, max: 6.5
-                        }
-                    }
-                },
-                plugins: [{
-                    id: 'refLines',
-                    afterDraw: (chart) => {
-                        const { ctx, scales: { x, y } } = chart;
-                        ctx.save();
-                        ctx.setLineDash([5,5]);
-                        ctx.strokeStyle = 'red';
-                        ctx.lineWidth = 1;
-                        [4.0, 4.5].forEach(val => {
-                            ctx.beginPath();
-                            ctx.moveTo(x.left, y.getPixelForValue(val));
-                            ctx.lineTo(x.right, y.getPixelForValue(val));
-                            ctx.stroke();
-                        });
-                        ctx.restore();
-                    }
-                }]
-            });
-        }
-
-        window.onload = function() {
-            calculate();
-            drawChart();
-        };
-    </script>
+    // 轴标签
+    ctx.fillStyle = '#333'; ctx.font = '12px sans-serif';
+    ctx.fillText('老股估值(万元)', W/2-40, H-5);
+    ctx.save(); ctx.translate(15, H/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText('综合成本(元)', 0, 0); ctx.restore();
+}
+window.onload = function(){ calculate(); drawChart(); };
+</script>
 </body>
 </html>
